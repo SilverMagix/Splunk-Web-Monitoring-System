@@ -13,7 +13,7 @@ Web App (FastAPI)          :8001
       ↓ logs (POST /ingest)
 Monitoring Service         :8002
       ↓ HEC
-Splunk                     :8000 (UI), :8088 (HEC)
+Splunk                     :8342 (UI), :8088 (HEC)
       ↓
 Search + Dashboard (Splunk UI)
 ```
@@ -35,7 +35,7 @@ Wait 2–3 minutes for Splunk to finish starting.
 
 ### 2. Enable HEC and create a token
 
-1. Open http://localhost:8000
+1. Open http://localhost:8342
 2. Login: `admin` / `Password123!`
 3. Go to **Settings → Data Inputs → HTTP Event Collector → Global Settings**
 4. Enable HTTP Event Collector
@@ -59,9 +59,20 @@ docker compose up -d
 
 ### 5. Generate traffic
 
+Run in the foreground (streams logs; summary every 10s):
+
 ```bash
 docker compose --profile load up load-generator
 ```
+
+Or run detached and follow logs in another terminal:
+
+```bash
+docker compose --profile load up -d load-generator
+docker compose logs -f load-generator
+```
+
+`Attaching to load-generator-1` with no immediate output is normal — the generator runs until you press Ctrl+C. After ~10 seconds you should see lines like `[10s] sent=25 errors=3`.
 
 Or run the load generator locally:
 
@@ -86,7 +97,7 @@ Terminal 1 — monitoring service:
 ```bash
 cd monitoring-service
 pip install -r requirements.txt
-export SPLUNK_HEC_URL=http://localhost:8088/services/collector
+export SPLUNK_HEC_URL=https://localhost:8088/services/collector
 export SPLUNK_TOKEN=your-token
 uvicorn main:app --host 0.0.0.0 --port 8002
 ```
@@ -185,10 +196,10 @@ event.endpoint="/login" AND event.status_code=401
 
 | Problem | Solution |
 |---------|----------|
-| No events in Splunk | Confirm HEC is enabled and `SPLUNK_TOKEN` in `.env` is correct |
+| No events in Splunk | HEC requires **HTTPS** (`https://...:8088/services/collector`), not HTTP; confirm HEC is enabled and `SPLUNK_TOKEN` in `.env` is correct |
 | `401` from Splunk HEC | Token is invalid or expired — create a new one |
 | Web app works but no Splunk data | Check monitoring-service logs: `docker compose logs monitoring-service` |
-| Splunk container won't start | Ensure ports 8000 and 8088 are free; allow 2–3 min for first boot |
+| Splunk container won't start | Check `docker compose logs splunk` — newer images need `SPLUNK_GENERAL_TERMS`; ensure ports 8342 and 8088 are free; allow 2–3 min for first boot |
 | App crashes when Splunk is down | Should not happen — Splunk failures are swallowed silently |
 
 ## Project Structure

@@ -78,8 +78,8 @@ async def checkout_spike(client: httpx.AsyncClient):
 
 
 async def main():
-    print(f"Load generator targeting {WEB_APP_URL}")
-    print("Press Ctrl+C to stop\n")
+    print(f"Load generator targeting {WEB_APP_URL}", flush=True)
+    print("Press Ctrl+C to stop\n", flush=True)
 
     start = time.time()
     last_burst = start
@@ -109,7 +109,8 @@ async def main():
             if now - last_summary >= 10:
                 elapsed = int(now - start)
                 print(
-                    f"[{elapsed}s] sent={stats['sent']} errors={stats['errors']}"
+                    f"[{elapsed}s] sent={stats['sent']} errors={stats['errors']}",
+                    flush=True,
                 )
                 last_summary = now
 
@@ -120,4 +121,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print(f"\nStopped. Total sent={stats['sent']} errors={stats['errors']}")
+        print(f"\nStopped. Total sent={stats['sent']} errors={stats['errors']}", flush=True)

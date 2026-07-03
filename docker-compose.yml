@@ -2,9 +2,10 @@ services:
   splunk:
     image: splunk/splunk:latest
     ports:
-      - "8000:8000"
+      - "8342:8000"
       - "8088:8088"
     environment:
+      SPLUNK_GENERAL_TERMS: --accept-sgt-current-at-splunk-com
       SPLUNK_START_ARGS: --accept-license
       SPLUNK_PASSWORD: Password123!
 
@@ -13,7 +14,7 @@ services:
     ports:
       - "8002:8002"
     environment:
-      SPLUNK_HEC_URL: http://splunk:8088/services/collector
+      SPLUNK_HEC_URL: ${SPLUNK_HEC_URL}
       SPLUNK_TOKEN: ${SPLUNK_TOKEN}
     depends_on:
       - splunk

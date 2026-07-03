@@ -20,6 +20,7 @@ def send_to_splunk(event: dict) -> None:
             headers={"Authorization": f"Splunk {token}"},
             json=payload,
             timeout=2,
+            verify=os.getenv("SPLUNK_HEC_VERIFY", "false").lower() == "true",
         )
     except Exception:
         pass
