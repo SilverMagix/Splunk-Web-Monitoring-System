@@ -1,0 +1,37 @@
+services:
+  splunk:
+    image: splunk/splunk:latest
+    ports:
+      - "8000:8000"
+      - "8088:8088"
+    environment:
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_PASSWORD: Password123!
+
+  monitoring-service:
+    build: ./monitoring-service
+    ports:
+      - "8002:8002"
+    environment:
+      SPLUNK_HEC_URL: http://splunk:8088/services/collector
+      SPLUNK_TOKEN: ${SPLUNK_TOKEN}
+    depends_on:
+      - splunk
+
+  web-app:
+    build: ./web-app
+    ports:
+      - "8001:8001"
+    environment:
+      MONITORING_SERVICE_URL: http://monitoring-service:8002
+    depends_on:
+      - monitoring-service
+
+  load-generator:
+    build: ./load-generator
+    environment:
+      WEB_APP_URL: http://web-app:8001
+    depends_on:
+      - web-app
+    profiles:
+      - load
