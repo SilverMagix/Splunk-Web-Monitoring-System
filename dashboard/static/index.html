@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Splunk Web Monitoring Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/static/vendor/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .glass {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    .gradient-bg {
+      background: radial-gradient(ellipse at top, #1e3a5f 0%, #0f172a 50%, #020617 100%);
+    }
+    .live-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .kpi-value { transition: all 0.4s ease; }
+    .chart-card { height: 320px; display: flex; flex-direction: column; }
+    .chart-card h2 { flex-shrink: 0; }
+    .chart-container {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      height: 240px;
+      max-height: 240px;
+      overflow: hidden;
+    }
+    .chart-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .status-charts-card {
+      height: 360px;
+      overflow: hidden;
+    }
+    #statusChartsGrid {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .status-chart-cell {
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .status-mini-chart {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      max-height: 115px;
+      overflow: hidden;
+    }
+    .status-mini-chart canvas {
+      display: block;
+      max-height: 100% !important;
+    }
+    .event-row { cursor: pointer; }
+    .event-row:hover { background: rgba(51, 65, 85, 0.4); }
+    .modal-backdrop {
+      background: rgba(2, 6, 23, 0.75);
+      backdrop-filter: blur(4px);
+    }
+    .json-block {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body class="h-full gradient-bg text-slate-100 min-h-screen">
+  <div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <!-- Header -->
+    <header class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">Web App Monitoring</h1>
+        <p class="text-slate-400 text-sm mt-1">Live observability from Splunk</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 text-sm text-slate-400">
+          <span id="liveDot" class="w-2 h-2 rounded-full bg-emerald-400 live-pulse"></span>
+          <span id="liveLabel">Live</span>
+        </div>
+        <select id="rangeSelect" class="glass rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="15m">Last 15 min</option>
+          <option value="1h">Last 1 hour</option>
+          <option value="24h">Last 24 hours</option>
+        </select>
+        <span id="lastUpdated" class="text-xs text-slate-500">—</span>
+      </div>
+    </header>
+
+    <!-- Error banner -->
+    <div id="errorBanner" class="hidden glass rounded-lg px-4 py-3 border-red-500/30 bg-red-950/30 text-red-300 text-sm"></div>
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="glass rounded-xl p-5">
+        <p class="text-slate-400 text-xs uppercase tracking-wider font-medium">Total Requests</p>
+        <p id="kpiTotal" class="kpi-value text-3xl font-bold mt-2 text-white">—</p>
+      </div>
+      <div class="glass rounded-xl p-5">
+        <p class="text-slate-400 text-xs uppercase tracking-wider font-medium">Error Rate</p>
+        <p id="kpiErrorRate" class="kpi-value text-3xl font-bold mt-2 text-amber-400">—</p>
+      </div>
+      <div class="glass rounded-xl p-5">
+        <p class="text-slate-400 text-xs uppercase tracking-wider font-medium">Avg Latency</p>
+        <p id="kpiLatency" class="kpi-value text-3xl font-bold mt-2 text-cyan-400">—</p>
+      </div>
+      <div class="glass rounded-xl p-5">
+        <p class="text-slate-400 text-xs uppercase tracking-wider font-medium">Failed Logins</p>
+        <p id="kpiFailedLogins" class="kpi-value text-3xl font-bold mt-2 text-rose-400">—</p>
+      </div>
+    </div>
+
+    <!-- Charts row 1 -->
+    <div class="grid lg:grid-cols-2 gap-4">
+      <div class="glass rounded-xl p-5 chart-card">
+        <h2 class="text-sm font-semibold text-slate-300 mb-4">Requests Over Time</h2>
+        <div class="chart-container">
+          <canvas id="timelineChart"></canvas>
+        </div>
+      </div>
+      <div class="glass rounded-xl p-5 chart-card">
+        <h2 class="text-sm font-semibold text-slate-300 mb-4">Requests by Endpoint</h2>
+        <div class="chart-container">
+          <canvas id="endpointChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts row 2 -->
+    <div class="grid lg:grid-cols-2 gap-4">
+      <div class="glass rounded-xl p-5 chart-card">
+        <h2 class="text-sm font-semibold text-slate-300 mb-4">Avg Latency by Endpoint</h2>
+        <div class="chart-container">
+          <canvas id="latencyChart"></canvas>
+        </div>
+      </div>
+      <div class="glass rounded-xl p-5 chart-card status-charts-card">
+        <h2 class="text-sm font-semibold text-slate-300 mb-4">Status Codes by Endpoint</h2>
+        <div id="statusChartsGrid" class="grid grid-cols-2 grid-rows-2 gap-2 flex-1 min-h-0 overflow-hidden"></div>
+      </div>
+    </div>
+
+    <!-- Events table -->
+    <div class="glass rounded-xl p-5 overflow-hidden">
+      <h2 class="text-sm font-semibold text-slate-300 mb-1">Recent Events</h2>
+      <p class="text-xs text-slate-500 mb-4">Click a row to view full event details</p>
+      <div class="overflow-x-auto max-h-80 overflow-y-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-slate-500 border-b border-slate-700">
+              <th class="pb-3 pr-4 font-medium">Timestamp</th>
+              <th class="pb-3 pr-4 font-medium">Endpoint</th>
+              <th class="pb-3 pr-4 font-medium">Method</th>
+              <th class="pb-3 pr-4 font-medium">Status</th>
+              <th class="pb-3 pr-4 font-medium">Latency</th>
+              <th class="pb-3 pr-4 font-medium">IP</th>
+              <th class="pb-3 font-medium">User</th>
+            </tr>
+          </thead>
+          <tbody id="eventsBody" class="text-slate-300"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Event detail modal -->
+  <div id="eventModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
+    <div class="glass rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-600/30">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+        <div>
+          <h3 class="text-lg font-semibold text-white">Event Details</h3>
+          <p id="modalSubtitle" class="text-xs text-slate-400 mt-1"></p>
+        </div>
+        <button id="closeModal" class="text-slate-400 hover:text-white text-2xl leading-none px-2" aria-label="Close">&times;</button>
+      </div>
+      <div class="overflow-y-auto p-5 space-y-5">
+        <div>
+          <h4 class="text-xs uppercase tracking-wider text-slate-500 font-medium mb-3">Parsed Fields</h4>
+          <div id="modalFields" class="grid grid-cols-2 gap-3 text-sm"></div>
+        </div>
+        <div>
+          <h4 class="text-xs uppercase tracking-wider text-slate-500 font-medium mb-3">Splunk Metadata</h4>
+          <div id="modalSplunk" class="grid grid-cols-2 gap-3 text-sm"></div>
+        </div>
+        <div>
+          <h4 class="text-xs uppercase tracking-wider text-slate-500 font-medium mb-3">Raw Event (_raw)</h4>
+          <pre id="modalRaw" class="json-block glass rounded-lg p-4 text-emerald-300 overflow-x-auto"></pre>
+        </div>
+        <div>
+          <h4 class="text-xs uppercase tracking-wider text-slate-500 font-medium mb-3">Full Event JSON</h4>
+          <pre id="modalFull" class="json-block glass rounded-lg p-4 text-sky-300 overflow-x-auto"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js?v=2"></script>
+</body>
+</html>

@@ -4,6 +4,7 @@ services:
     ports:
       - "8342:8000"
       - "8088:8088"
+      - "8089:8089"
     environment:
       SPLUNK_GENERAL_TERMS: --accept-sgt-current-at-splunk-com
       SPLUNK_START_ARGS: --accept-license
@@ -25,14 +26,18 @@ services:
       - "8001:8001"
     environment:
       MONITORING_SERVICE_URL: http://monitoring-service:8002
+      WEB_APP_URL: http://127.0.0.1:8001
+      ENABLE_LOAD_GENERATOR: ${ENABLE_LOAD_GENERATOR:-true}
     depends_on:
       - monitoring-service
 
-  load-generator:
-    build: ./load-generator
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "8003:8003"
     environment:
-      WEB_APP_URL: http://web-app:8001
+      SPLUNK_URL: ${SPLUNK_URL:-https://splunk:8089}
+      SPLUNK_USER: ${SPLUNK_USER:-admin}
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:-Password123!}
     depends_on:
-      - web-app
-    profiles:
-      - load
+      - splunk
