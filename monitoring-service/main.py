@@ -1,3 +1,5 @@
+"""Log ingest service: accepts structured web-app events and ships them to Splunk."""
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -7,6 +9,8 @@ app = FastAPI(title="Monitoring Service")
 
 
 class LogEvent(BaseModel):
+    """Schema for request logs produced by the web-app middleware."""
+
     timestamp: str
     service: str
     endpoint: str
@@ -19,10 +23,12 @@ class LogEvent(BaseModel):
 
 @app.get("/health")
 def health():
+    """Liveness probe for Docker."""
     return {"status": "ok"}
 
 
 @app.post("/ingest")
 def ingest(event: LogEvent):
+    """Accept one log event and forward it to Splunk."""
     send_to_splunk(event.model_dump(exclude_none=True))
     return {"status": "accepted"}

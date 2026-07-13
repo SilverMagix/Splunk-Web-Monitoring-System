@@ -1,12 +1,14 @@
+"""Splunk REST helpers: run SPL searches and shape results for the dashboard UI."""
+
 from urllib.parse import urlparse, urlunparse
 
 import json
-import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 
 import requests
 
+# Map UI range keys to Splunk earliest= values.
 RANGE_MAP = {
     "15m": "-15m",
     "1h": "-1h",
@@ -18,7 +20,7 @@ DOCKER_SPLUNK_PORT = 8089
 
 
 def normalize_splunk_url(url: str) -> str:
-    """Map browser-friendly localhost URLs to the Docker Compose Splunk service."""
+    """Map localhost URLs to the Docker Compose service hostname `splunk`."""
     cleaned = url.strip().rstrip("/")
     parsed = urlparse(cleaned)
     host = (parsed.hostname or "").lower()
@@ -32,18 +34,22 @@ def normalize_splunk_url(url: str) -> str:
 
 @dataclass
 class SplunkConfig:
+    """Connection settings for Splunk management port (REST API)."""
+
     url: str
     user: str
     password: str
-    verify_ssl: bool = False
+    verify_ssl: bool = False  # HEC/management TLS is self-signed in this demo
 
 
 def _base_search(range_key: str) -> str:
+    """Common SPL for web_app_logs within the requested time window."""
     earliest = RANGE_MAP.get(range_key, "-15m")
     return f'search index=* sourcetype="web_app_logs" earliest={earliest} | spath'
 
 
 def run_search(spl: str, config: SplunkConfig) -> list[dict]:
+    """Execute a blocking export search and parse NDJSON results."""
     url = f"{config.url.rstrip('/')}/services/search/jobs/export"
     response = requests.post(
         url,
@@ -68,6 +74,7 @@ def run_search(spl: str, config: SplunkConfig) -> list[dict]:
 
 
 def _format_recent_event(row: dict) -> dict:
+    """Normalize a Splunk result row into the frontend event shape."""
     sc = row.get("status_code", 0)
     if isinstance(sc, list):
         sc = sc[0] if sc else 0
@@ -100,6 +107,7 @@ def _format_recent_event(row: dict) -> dict:
 
 
 def fetch_dashboard_data(range_key: str, config: SplunkConfig) -> dict:
+    """Run all dashboard SPL queries in parallel and assemble the API payload."""
     base = _base_search(range_key)
     queries = {
         "summary": (

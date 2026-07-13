@@ -1,3 +1,5 @@
+"""Traffic simulator for the web app: baseline load plus bursts, brute-force, and checkout spikes."""
+
 import asyncio
 import os
 import random
@@ -7,6 +9,7 @@ import httpx
 
 WEB_APP_URL = os.getenv("WEB_APP_URL", "http://localhost:8001")
 
+# (method, path, JSON body or None, selection weight)
 ENDPOINTS = [
     ("GET", "/products", None, 0.40),
     ("POST", "/login", {"username": "user", "password": "pass"}, 0.30),
@@ -18,6 +21,7 @@ stats = {"sent": 0, "errors": 0}
 
 
 def pick_endpoint():
+    """Weighted random choice among demo endpoints."""
     roll = random.random()
     cumulative = 0.0
     for method, path, body, weight in ENDPOINTS:
@@ -28,6 +32,7 @@ def pick_endpoint():
 
 
 async def send_request(client: httpx.AsyncClient, method: str, path: str, body: dict | None):
+    """Send one request and update success/error counters."""
     url = f"{WEB_APP_URL}{path}"
     try:
         if method == "GET":
@@ -42,6 +47,7 @@ async def send_request(client: httpx.AsyncClient, method: str, path: str, body: 
 
 
 async def burst_traffic(client: httpx.AsyncClient):
+    """Every ~10s: fire 10–20 concurrent mixed requests."""
     count = random.randint(10, 20)
     tasks = []
     for _ in range(count):
@@ -51,6 +57,7 @@ async def burst_traffic(client: httpx.AsyncClient):
 
 
 async def brute_force_logins(client: httpx.AsyncClient):
+    """Every ~30s: rapid failed login attempts (bad credentials)."""
     count = random.randint(5, 10)
     for _ in range(count):
         username = f"attacker_{random.randint(1, 9999)}"
@@ -64,6 +71,7 @@ async def brute_force_logins(client: httpx.AsyncClient):
 
 
 async def checkout_spike(client: httpx.AsyncClient):
+    """Every ~45s: several concurrent checkout requests."""
     count = random.randint(3, 5)
     tasks = [
         send_request(
@@ -78,6 +86,7 @@ async def checkout_spike(client: httpx.AsyncClient):
 
 
 async def main():
+    """Run continuous baseline traffic with periodic anomaly patterns."""
     print(f"Load generator targeting {WEB_APP_URL}", flush=True)
     print("Press Ctrl+C to stop\n", flush=True)
 
@@ -103,6 +112,7 @@ async def main():
                 await checkout_spike(client)
                 last_checkout = now
 
+            # Steady baseline: one request every 200–500 ms.
             method, path, body = pick_endpoint()
             await send_request(client, method, path, body)
 

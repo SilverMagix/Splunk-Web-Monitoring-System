@@ -1,3 +1,5 @@
+"""Simulated ecommerce FastAPI app that emits structured request logs for observability demos."""
+
 import asyncio
 import os
 import random
@@ -40,6 +42,7 @@ class CheckoutRequest(BaseModel):
 
 
 def random_ip() -> str:
+    """Return a fake client IP for log variety."""
     choice = random.randint(0, 2)
     if choice == 0:
         return f"10.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(1, 254)}"
@@ -49,6 +52,7 @@ def random_ip() -> str:
 
 
 async def forward_log(log_event: dict) -> None:
+    """Best-effort POST to the monitoring service; failures are swallowed."""
     try:
         async with httpx.AsyncClient(timeout=1.0) as client:
             await client.post(f"{MONITORING_SERVICE_URL}/ingest", json=log_event)
@@ -58,6 +62,7 @@ async def forward_log(log_event: dict) -> None:
 
 @app.middleware("http")
 async def logging_middleware(request: Request, call_next):
+    """Time every request and forward a structured log asynchronously."""
     start = time.perf_counter()
     user_id = None
 
@@ -79,17 +84,20 @@ async def logging_middleware(request: Request, call_next):
     if user_id:
         log_event["user_id"] = user_id
 
+    # Fire-and-forget so logging never blocks the client response.
     asyncio.create_task(forward_log(log_event))
     return response
 
 
 @app.get("/health")
 def health():
+    """Instant health check used by the load generator and orchestrators."""
     return {"status": "ok"}
 
 
 @app.get("/products")
 async def products():
+    """List a random subset of fake products (20–100 ms latency)."""
     await asyncio.sleep(random.uniform(0.02, 0.1))
     count = random.randint(5, 10)
     return {"products": random.sample(FAKE_PRODUCTS, count)}
@@ -97,6 +105,7 @@ async def products():
 
 @app.post("/login")
 async def login(body: LoginRequest, request: Request):
+    """Simulate auth: ~70% success (200), ~30% failure (401)."""
     await asyncio.sleep(random.uniform(0.05, 0.15))
     if random.random() < 0.7:
         user_id = f"user_{random.randint(1000, 9999)}"
@@ -110,6 +119,7 @@ async def login(body: LoginRequest, request: Request):
 
 @app.post("/checkout")
 async def checkout(body: CheckoutRequest, request: Request):
+    """Simulate checkout: higher latency and ~15% payment failures (500)."""
     await asyncio.sleep(random.uniform(0.2, 1.5))
     user_id = f"user_{random.randint(1000, 9999)}"
     request.state.user_id = user_id
