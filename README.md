@@ -17,6 +17,17 @@ Web Dashboard                       :8003  (reads from Splunk REST API)
 Splunk UI Search + Dashboard
 ```
 
+### System overview
+
+![System overview](docs/diagrams/system-overview.svg)
+
+### Log ingest flow
+
+![Log ingest flow](docs/diagrams/log-ingest-flow.svg)
+
+### Service layout
+
+![Service layout](docs/diagrams/service-layout.svg)
 ## Prerequisites
 
 - Docker and Docker Compose

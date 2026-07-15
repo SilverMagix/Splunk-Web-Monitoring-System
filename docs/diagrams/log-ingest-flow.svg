@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420" role="img" aria-label="Log ingest flow">
+  <style>
+  .box { fill:#f8fafc; stroke:#334155; stroke-width:1.5; rx:8; }
+  .boxAccent { fill:#e2e8f0; stroke:#0f172a; stroke-width:1.5; rx:8; }
+  .boxStore { fill:#f1f5f9; stroke:#0f172a; stroke-width:1.5; }
+  .label { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:13px; fill:#0f172a; text-anchor:middle; }
+  .sub { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:11px; fill:#475569; text-anchor:middle; }
+  .edge { stroke:#475569; stroke-width:1.5; fill:none; marker-end:url(#arrow); }
+  .edgeLabel { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:10px; fill:#334155; text-anchor:middle; }
+  .title { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:14px; font-weight:600; fill:#0f172a; }
+  .group { fill:#f8fafc; stroke:#94a3b8; stroke-width:1; stroke-dasharray:4 3; rx:10; }
+  .groupTitle { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:12px; fill:#64748b; }
+
+    .lifeline { stroke:#94a3b8; stroke-width:1; stroke-dasharray:4 4; }
+    .actor { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:12px; fill:#0f172a; text-anchor:middle; font-weight:600; }
+    .msg { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:11px; fill:#334155; }
+    .note { fill:#fef9c3; stroke:#ca8a04; stroke-width:1; rx:6; }
+    .noteText { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:11px; fill:#713f12; text-anchor:middle; }
+  </style>
+  
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+    </marker>
+  </defs>
+
+
+  <!-- actors -->
+  <rect class="box" x="40" y="20" width="140" height="40"/>
+  <text class="actor" x="110" y="45">Client / generator</text>
+  <line class="lifeline" x1="110" y1="60" x2="110" y2="380"/>
+
+  <rect class="box" x="250" y="20" width="120" height="40"/>
+  <text class="actor" x="310" y="45">web-app</text>
+  <line class="lifeline" x1="310" y1="60" x2="310" y2="380"/>
+
+  <rect class="box" x="450" y="20" width="160" height="40"/>
+  <text class="actor" x="530" y="45">monitoring-service</text>
+  <line class="lifeline" x1="530" y1="60" x2="530" y2="380"/>
+
+  <rect class="boxAccent" x="690" y="20" width="140" height="40"/>
+  <text class="actor" x="760" y="45">Splunk HEC</text>
+  <line class="lifeline" x1="760" y1="60" x2="760" y2="380"/>
+
+  <!-- messages -->
+  <path class="edge" d="M110 100 H310"/>
+  <text class="msg" x="210" y="92">1. HTTP request</text>
+
+  <path class="edge" d="M310 145 H200"/>
+  <!-- self call visual -->
+  <path class="edge" d="M310 145 H360 V175 H310"/>
+  <text class="msg" x="400" y="165">2. timing middleware</text>
+
+  <path class="edge" d="M310 210 H110"/>
+  <text class="msg" x="210" y="202">3. response</text>
+
+  <path class="edge" d="M310 260 H530"/>
+  <text class="msg" x="420" y="252">4. async POST /ingest</text>
+
+  <path class="edge" d="M530 310 H760"/>
+  <text class="msg" x="645" y="302">5. HEC + Splunk token</text>
+
+  <rect class="note" x="470" y="340" width="320" height="44"/>
+  <text class="noteText" x="630" y="367">Failures swallowed — apps stay up if Splunk is down</text>
+</svg>

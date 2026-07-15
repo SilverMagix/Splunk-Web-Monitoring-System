@@ -1,0 +1,29 @@
+flowchart TB
+  subgraph webApp [web-app]
+    Entry["entrypoint.sh"]
+    MainWeb["main.py"]
+    Gen["generator.py"]
+  end
+
+  subgraph monitoring [monitoring-service]
+    MainMon["main.py"]
+    Client["splunk_client.py"]
+  end
+
+  subgraph dash [dashboard]
+    MainDash["main.py"]
+    Search["splunk_search.py"]
+    Static["static/ UI + Chart.js"]
+  end
+
+  Splunk[(Splunk)]
+
+  Entry --> MainWeb
+  Entry --> Gen
+  Gen -->|"HTTP"| MainWeb
+  MainWeb -->|"POST /ingest"| MainMon
+  MainMon --> Client
+  Client -->|"HEC"| Splunk
+  Static -->|"POST /api/dashboard"| MainDash
+  MainDash --> Search
+  Search -->|"REST :8089"| Splunk

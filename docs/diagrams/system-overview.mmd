@@ -1,0 +1,14 @@
+flowchart LR
+  Gen[Load generator]
+  Web["Web App :8001"]
+  Mon["Monitoring Service :8002"]
+  Splunk["Splunk<br/>UI :8342 · HEC :8088 · REST :8089"]
+  Dash["Web Dashboard :8003"]
+  Browser[Browser / Splunk UI]
+
+  Gen -->|"HTTP /health /products /login /checkout"| Web
+  Web -->|"POST /ingest<br/>structured JSON"| Mon
+  Mon -->|"HEC POST<br/>sourcetype web_app_logs"| Splunk
+  Dash -->|"REST search API"| Splunk
+  Browser --> Dash
+  Browser --> Splunk

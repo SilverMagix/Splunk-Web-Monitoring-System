@@ -1,0 +1,12 @@
+sequenceDiagram
+  participant Client as Client / load generator
+  participant Web as web-app
+  participant Mon as monitoring-service
+  participant HEC as Splunk HEC
+
+  Client->>Web: HTTP request
+  Web->>Web: handle endpoint + timing middleware
+  Web-->>Client: response
+  Web->>Mon: async POST /ingest (fire-and-forget)
+  Mon->>HEC: Authorization: Splunk token
+  Note over Mon,HEC: Failures swallowed so apps stay up if Splunk is down

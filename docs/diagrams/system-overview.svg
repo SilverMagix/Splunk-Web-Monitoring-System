@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="320" viewBox="0 0 980 320" role="img" aria-label="System overview">
+  <style>
+  .box { fill:#f8fafc; stroke:#334155; stroke-width:1.5; rx:8; }
+  .boxAccent { fill:#e2e8f0; stroke:#0f172a; stroke-width:1.5; rx:8; }
+  .boxStore { fill:#f1f5f9; stroke:#0f172a; stroke-width:1.5; }
+  .label { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:13px; fill:#0f172a; text-anchor:middle; }
+  .sub { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:11px; fill:#475569; text-anchor:middle; }
+  .edge { stroke:#475569; stroke-width:1.5; fill:none; marker-end:url(#arrow); }
+  .edgeLabel { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:10px; fill:#334155; text-anchor:middle; }
+  .title { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:14px; font-weight:600; fill:#0f172a; }
+  .group { fill:#f8fafc; stroke:#94a3b8; stroke-width:1; stroke-dasharray:4 3; rx:10; }
+  .groupTitle { font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; font-size:12px; fill:#64748b; }
+</style>
+  
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+    </marker>
+  </defs>
+
+
+  <!-- row 1 pipeline -->
+  <rect class="box" x="30" y="40" width="150" height="70"/>
+  <text class="label" x="105" y="70">Load generator</text>
+  <text class="sub" x="105" y="90">burst / baseline</text>
+
+  <path class="edge" d="M180 75 H220"/>
+  <text class="edgeLabel" x="200" y="30">HTTP</text>
+
+  <rect class="box" x="220" y="40" width="150" height="70"/>
+  <text class="label" x="295" y="70">Web App :8001</text>
+  <text class="sub" x="295" y="90">FastAPI + logs</text>
+
+  <path class="edge" d="M370 75 H410"/>
+  <text class="edgeLabel" x="390" y="30">POST /ingest</text>
+
+  <rect class="box" x="410" y="40" width="170" height="70"/>
+  <text class="label" x="495" y="70">Monitoring :8002</text>
+  <text class="sub" x="495" y="90">forwarder</text>
+
+  <path class="edge" d="M580 75 H620"/>
+  <text class="edgeLabel" x="600" y="30">HEC</text>
+
+  <rect class="boxAccent" x="620" y="30" width="180" height="90"/>
+  <text class="label" x="710" y="60">Splunk</text>
+  <text class="sub" x="710" y="80">UI :8342  HEC :8088</text>
+  <text class="sub" x="710" y="98">REST :8089</text>
+
+  <!-- dashboard + browser -->
+  <rect class="box" x="410" y="200" width="170" height="70"/>
+  <text class="label" x="495" y="230">Web Dashboard</text>
+  <text class="sub" x="495" y="250">:8003 Chart UI</text>
+
+  <rect class="box" x="220" y="200" width="150" height="70"/>
+  <text class="label" x="295" y="230">Browser</text>
+  <text class="sub" x="295" y="250">operator</text>
+
+  <path class="edge" d="M370 235 H410"/>
+  <text class="edgeLabel" x="390" y="190">open UI</text>
+
+  <path class="edge" d="M580 235 H710 V120"/>
+  <text class="edgeLabel" x="660" y="190">REST search API</text>
+
+  <path class="edge" d="M295 200 V150 H710 V120"/>
+  <text class="edgeLabel" x="480" y="145">Splunk UI :8342</text>
+</svg>
